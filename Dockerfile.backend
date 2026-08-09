@@ -1,0 +1,39 @@
+# ============================================================
+# 📦 后端 Dockerfile（构建后端API镜像）
+# 作用：打包 Node.js + Express + SQLite API 服务
+# ⚠️ Blueprint 用法：
+#   dockerfilePath: ./Dockerfile.backend
+#   dockerContext: .  (仓库根目录)
+# ============================================================
+
+# 【基础镜像】Node.js 20 的 Alpine 版本
+FROM node:20-alpine
+
+# 【工作目录】
+WORKDIR /app
+
+# 【安装编译依赖】better-sqlite3 是原生模块，需要编译工具
+RUN apk add --no-cache python3 make g++
+
+# 【先复制依赖清单】利用Docker缓存，依赖不变就跳过 npm install
+# dockerContext 是仓库根目录，所以路径要写完整的 backend/xxx
+COPY backend/package.json ./
+
+# 【安装npm依赖】只装生产依赖
+RUN npm install --omit=dev
+
+# 【复制业务代码】
+COPY backend/server.js ./
+
+# 【创建数据目录】SQLite 数据库文件存放路径
+RUN mkdir -p /app/data
+VOLUME ["/app/data"]
+
+# 【声明端口】API服务跑在3000端口
+EXPOSE 3000
+
+# 【环境变量】生产模式
+ENV NODE_ENV=production
+
+# 【启动命令】
+CMD ["node", "server.js"]

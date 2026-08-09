@@ -1,8 +1,16 @@
 # ============================================================
-# 🐳 Render Blueprint 配置文件 (render.yaml)
-# 解决 Blueprint 部署失败的终极版：
-#   - frontend Dockerfile 已加等待脚本，等 backend 就绪才启动 Nginx
-#   - 服务名严格叫 backend，与 nginx.conf proxy_pass http://backend:3000 对应
+# 🐳 Render Blueprint 配置文件 (render.yaml) 终极修正版！
+#
+# 🔧 解决：之前失败的核心原因
+#   - 两个 Dockerfile 原来都叫 Dockerfile，放在不同目录
+#   - dockerfilePath + dockerContext 组合混乱，COPY 找不到文件
+#
+# ✅ 现在的方案（清晰不冲突）：
+#   - 仓库根目录放 两个 明确命名的 Dockerfile
+#       Dockerfile.frontend  (给 Nginx 前端)
+#       Dockerfile.backend   (给 Node 后端)
+#   - 两个服务的 dockerContext 统一 = 仓库根目录 "."
+#   - 每个服务指定各自的 dockerfilePath
 # ============================================================
 
 services:
@@ -12,12 +20,10 @@ services:
     runtime: docker
     region: singapore
     plan: free
-    dockerfilePath: ./Dockerfile
-    # 构建上下文=仓库根目录（会复制 ./frontend、nginx.conf、等待脚本）
-    dockerContext: .
+    dockerfilePath: ./Dockerfile.frontend
+    dockerContext: .              # ✅ 统一从仓库根目录构建
     healthCheckPath: /
-    # 显式声明依赖（Render会先启动backend，frontend要后启动）
-    # 但即使有这个，DNS解析仍然有延迟，所以Dockerfile里加了等待脚本双保险
+    # 启动顺序：显式声明依赖 backend（先起 backend，再起 frontend）
     envVars:
       - key: BACKEND_HOST
         fromService:
@@ -31,14 +37,13 @@ services:
           property: port
 
   # ---------- 服务2：后端API（Node.js + Express + SQLite） ----------
-  # ⚠️ 服务名必须叫 "backend"！与 nginx.conf 的 upstream 完全一致
+  # ⚠️ 服务名必须叫 "backend"！nginx.conf 写的 proxy_pass http://backend:3000
   - type: web
     name: backend
     runtime: docker
     region: singapore
     plan: free
-    dockerfilePath: ./Dockerfile
-    # 构建上下文=backend子目录（这里面的 package.json / server.js 才是后端的）
-    dockerContext: ./backend
+    dockerfilePath: ./Dockerfile.backend
+    dockerContext: .              # ✅ 统一从仓库根目录构建，COPY backend/xxx 不会错
     healthCheckPath: /api/health
-    # 免费套餐没有 Disk，实例重启排行榜会清空（已知限制）
+    # 免费套餐没有 Disk，实例重启排行榜会清空
