@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>🐍 贪吃蛇 - 全网排行榜</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1>🐍 贪吃蛇</h1>
+        <div class="score-board">
+            <div class="score">分数: <span id="score">0</span></div>
+            <div class="high-score">最高: <span id="highScore">0</span></div>
+        </div>
+        <div class="player-info">
+            <label for="nickname">昵称:</label>
+            <input type="text" id="nickname" maxlength="15" placeholder="输入你的昵称" />
+            <button id="rankBtn" title="查看排行榜">🏆 排行</button>
+        </div>
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+        </div>
+        <div class="mobile-controls">
+            <div class="dpad">
+                <button class="dpad-btn up" data-dir="up">⬆️</button>
+                <button class="dpad-btn left" data-dir="left">⬅️</button>
+                <button class="dpad-btn right" data-dir="right">➡️</button>
+                <button class="dpad-btn down" data-dir="down">⬇️</button>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="startBtn">开始游戏</button>
+            <button id="pauseBtn">暂停</button>
+            <button id="resetBtn">重新开始</button>
+        </div>
+        <div class="instructions">
+            <p>🎮 操作说明</p>
+            <p>电脑: ⬆️⬇️⬅️➡️ 方向键 或 WASD</p>
+            <p>手机: 点击方向按钮 或 在画布上滑动手指</p>
+            <p>吃红色食物得分，游戏结束自动上榜！</p>
+        </div>
+    </div>
+
+    <div id="submitModal" class="modal hidden">
+        <div class="modal-content">
+            <h2>🎉 游戏结束</h2>
+            <p class="final-score">本局得分: <strong id="finalScore">0</strong></p>
+            <p class="rank-info" id="rankInfo"></p>
+            <div class="submit-row">
+                <input type="text" id="submitNick" maxlength="15" placeholder="输入昵称上榜" />
+                <button id="submitScoreBtn">提交分数</button>
+            </div>
+            <p class="submit-tip" id="submitTip"></p>
+            <button id="closeModal" class="close-btn">关闭</button>
+        </div>
+    </div>
+
+    <div id="rankModal" class="modal hidden">
+        <div class="modal-content rank-content">
+            <h2>🏆 全网排行榜 TOP 10</h2>
+            <p class="rank-count">共 <span id="totalCount">0</span> 位玩家上榜</p>
+            <div class="rank-list" id="rankList">
+                <div class="loading">加载中...</div>
+            </div>
+            <button id="closeRankModal" class="close-btn">关闭</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

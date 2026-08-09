@@ -1,0 +1,16 @@
+{
+  "name": "snake-game-backend",
+  "version": "1.0.0",
+  "description": "Snake Game Backend API - 贪吃蛇游戏后端接口服务",
+  "main": "server.js",
+
+  "scripts": {
+    "start": "node server.js"
+  },
+
+  "dependencies": {
+    "express": "^4.19.2",
+    "better-sqlite3": "^11.1.2",
+    "cors": "^2.8.5"
+  }
+}

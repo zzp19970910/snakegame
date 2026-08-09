@@ -1,0 +1,61 @@
+# ============================================================
+# 🐳 Docker Compose 编排配置文件
+# 作用：一键启动"前端Nginx + 后端Node.js + 数据库"整个项目
+# 用法：在当前目录运行 docker-compose up -d --build
+# ============================================================
+
+# Docker Compose 配置文件版本号
+version: '3.8'
+
+# ============================================================
+# 【services】定义要启动的所有容器（服务）
+# 这里我们有两个服务：frontend（前端） 和 backend（后端API）
+# ============================================================
+services:
+
+  # ---------- 服务1：前端网站（Nginx） ----------
+  frontend:
+    build:
+      context: .                 # 构建上下文：当前myWeb目录
+      dockerfile: Dockerfile     # 用哪个Dockerfile来构建镜像
+    ports:
+      - "8080:80"                # 端口映射：主机8080 -> 容器80
+                                 # 你在浏览器打开 http://localhost:8080
+    container_name: snake-frontend   # 容器名字（随便取，方便识别）
+    restart: unless-stopped          # 自动重启策略：除非手动停止，否则挂了就重启
+    depends_on:
+      - backend                      # 依赖：先启动backend，再启动frontend
+    networks:
+      - snake-net                    # 加入这个网络，才能和backend互相通信
+
+  # ---------- 服务2：后端API（Node.js） ----------
+  backend:
+    build:
+      context: ./backend        # 构建上下文：backend子目录
+      dockerfile: Dockerfile    # 用backend文件夹里的Dockerfile
+    container_name: snake-backend
+    restart: unless-stopped
+    volumes:
+      # 数据卷：把数据库文件保存在Docker专用区域，删容器也不会丢数据！
+      # 左边 snake-data 是数据卷名字，右边 /app/data 是容器里的路径
+      - snake-data:/app/data
+    networks:
+      - snake-net               # 和frontend在同一个网络里
+    expose:
+      - "3000"                  # 只在内部网络开放3000端口，外面直接访问不到（安全）
+
+# ============================================================
+# 【volumes】定义数据卷（持久化存储）
+# 相当于给数据库找了一个"永久保险箱"
+# ============================================================
+volumes:
+  snake-data:                   # 专门存SQLite数据库文件
+                                # 查看命令：docker volume ls
+
+# ============================================================
+# 【networks】定义容器间的内部网络
+# 就像给frontend和backend拉了一根专属网线
+# ============================================================
+networks:
+  snake-net:
+    driver: bridge              # bridge是最常用的网络类型
