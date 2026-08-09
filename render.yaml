@@ -1,49 +1,38 @@
 # ============================================================
-# 🐳 Render Blueprint 配置文件 (render.yaml) 终极修正版！
+# 🐳 Render Blueprint 配置文件 (render.yaml) 最终版！
 #
-# 🔧 解决：之前失败的核心原因
-#   - 两个 Dockerfile 原来都叫 Dockerfile，放在不同目录
-#   - dockerfilePath + dockerContext 组合混乱，COPY 找不到文件
-#
-# ✅ 现在的方案（清晰不冲突）：
-#   - 仓库根目录放 两个 明确命名的 Dockerfile
-#       Dockerfile.frontend  (给 Nginx 前端)
-#       Dockerfile.backend   (给 Node 后端)
-#   - 两个服务的 dockerContext 统一 = 仓库根目录 "."
-#   - 每个服务指定各自的 dockerfilePath
+# ✅ 成功关键：
+#   1. backend 服务先正常启动（已经验证过 ✅ Deployed）
+#   2. 进 backend 服务页面，复制它的公网地址（格式：https://backend-xxxx.onrender.com）
+#   3. 进 frontend 服务 → Environment → 找 BACKEND_URL，把值改成你上面复制的地址
+#      (⚠️ 末尾不要 /，不要加 /api！就写 https://backend-xxxx.onrender.com 就行)
+#   4. Save Changes → frontend 会自动重启，全部搞定！
 # ============================================================
 
 services:
-  # ---------- 服务1：前端网站（Nginx + 静态文件 + 等待脚本） ----------
+  # ---------- 服务1：前端网站（Nginx + 反向代理到 backend 公网地址） ----------
   - type: web
     name: frontend
     runtime: docker
     region: singapore
     plan: free
     dockerfilePath: ./Dockerfile.frontend
-    dockerContext: .              # ✅ 统一从仓库根目录构建
+    dockerContext: .
     healthCheckPath: /
-    # 启动顺序：显式声明依赖 backend（先起 backend，再起 frontend）
     envVars:
-      - key: BACKEND_HOST
-        fromService:
-          type: web
-          name: backend
-          property: host
-      - key: BACKEND_PORT
-        fromService:
-          type: web
-          name: backend
-          property: port
+      # ⚠️⚠️⚠️ Blueprint 创建完服务后，一定要手动改这个值！
+      # 操作：Render Dashboard → 点 frontend → Environment → 找到下面这个 BACKEND_URL → Edit
+      # 改成：https://你的backend服务的公网地址.onrender.com
+      # 例：https://backend-a1b2c3.onrender.com   （末尾不要加 /，不要加 /api）
+      - key: BACKEND_URL
+        value: "http://placeholder.invalid"
 
   # ---------- 服务2：后端API（Node.js + Express + SQLite） ----------
-  # ⚠️ 服务名必须叫 "backend"！nginx.conf 写的 proxy_pass http://backend:3000
   - type: web
     name: backend
     runtime: docker
     region: singapore
     plan: free
     dockerfilePath: ./Dockerfile.backend
-    dockerContext: .              # ✅ 统一从仓库根目录构建，COPY backend/xxx 不会错
+    dockerContext: .
     healthCheckPath: /api/health
-    # 免费套餐没有 Disk，实例重启排行榜会清空

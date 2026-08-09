@@ -1,35 +1,18 @@
 # ============================================================
 # 📦 前端 Dockerfile（构建前端镜像）
-# 作用：把 HTML/CSS/JS 打包进 Nginx 镜像，形成一个网站服务器
-# ⚠️ Blueprint 用法：
-#   dockerfilePath: ./Dockerfile.frontend
-#   dockerContext: .  (仓库根目录)
+# ⚠️ 启动前必须给容器加环境变量 BACKEND_URL=https://你的backend.onrender.com
 # ============================================================
 
-# 【基础镜像】用 Nginx 的 Alpine 版本
-# - nginx 是官方高性能Web服务器
-# - alpine 是超精简版Linux，体积小（只有几十MB），启动快
 FROM nginx:alpine
 
-# 【清理默认内容】删掉Nginx自带的默认欢迎页，避免冲突
 RUN rm -rf /usr/share/nginx/html/*
-
-# 【复制前端文件】把本机 frontend 文件夹里的所有内容
-# 复制到容器里的网站根目录 /usr/share/nginx/html
 COPY frontend /usr/share/nginx/html
-
-# 【复制Nginx配置】把我们写的 nginx.conf 覆盖容器里的默认配置
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# 【等待脚本】先等 backend 准备好了再启动 Nginx
-# 解决 Blueprint 里两个服务同时启动导致 Nginx "host not found" 崩溃
+# 启动脚本：envsubst 替换 $BACKEND_URL + 启动Nginx
 COPY frontend-entrypoint.sh /frontend-entrypoint.sh
-RUN chmod +x /frontend-entrypoint.sh \
-    && apk add --no-cache wget
+RUN chmod +x /frontend-entrypoint.sh
 
-# 【声明端口】告诉别人这个容器开放80端口
 EXPOSE 80
-
-# 【启动命令】改成先跑等待脚本，脚本最后会 exec 启动 nginx
 ENTRYPOINT ["/frontend-entrypoint.sh"]
 CMD []
