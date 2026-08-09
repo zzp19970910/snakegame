@@ -18,12 +18,16 @@ COPY frontend /usr/share/nginx/html
 # 【复制Nginx配置】把我们写的 nginx.conf 覆盖容器里的默认配置
 COPY nginx.conf /etc/nginx/nginx.conf
 
+# 【新增：等待脚本】先等 backend 准备好了再启动 Nginx
+# 解决 Blueprint 里两个服务同时启动导致 Nginx "host not found" 崩溃
+COPY frontend-entrypoint.sh /frontend-entrypoint.sh
+RUN chmod +x /frontend-entrypoint.sh \
+    && apk add --no-cache wget  # Alpine 默认没 wget/curl，装一个用来探测端口
+
 # 【声明端口】告诉别人这个容器开放80端口（只是文档，不实际开端口）
 # 真正的端口映射在 docker-compose.yml 的 ports 里
 EXPOSE 80
 
-# 【启动命令】容器运行时执行的命令
-# - nginx 启动Nginx程序
-# - -g "daemon off;" 意思是不要后台运行，而是在前台跑
-#   （Docker容器必须有一个前台进程，否则容器会自动退出！）
-CMD ["nginx", "-g", "daemon off;"]
+# 【启动命令】改成先跑等待脚本，脚本最后会 exec 启动 nginx
+ENTRYPOINT ["/frontend-entrypoint.sh"]
+CMD []
