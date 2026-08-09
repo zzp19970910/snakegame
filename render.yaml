@@ -2,33 +2,38 @@
 # 🐳 Render Blueprint 配置文件 (render.yaml)
 # 作用：告诉 Render 怎么部署我们的两个服务（frontend + backend）
 # 等价于我们本地的 docker-compose.yml，只是 Render 有自己的格式
+#
+# ⚠️ 重要：服务名必须和 nginx.conf 里的 proxy_pass 目标一致！
+# nginx.conf 写的是 proxy_pass http://backend:3000，所以这里服务名必须叫 backend
 # ============================================================
 
 services:
   # ---------- 服务1：前端网站（Nginx + 静态文件） ----------
   - type: web
-    name: snake-frontend
+    name: frontend
     runtime: docker
     region: singapore           # 新加坡节点，延迟最低
     plan: free                  # 免费套餐
     dockerfilePath: ./Dockerfile
     dockerContext: .            # 构建上下文 = 仓库根目录
     healthCheckPath: /
-    # 同一 Blueprint 内的服务可以直接用服务名互相访问
-    # Nginx 里写的 proxy_pass http://backend:3000 正好能用！
 
   # ---------- 服务2：后端API（Node.js + Express + SQLite） ----------
+  # ⚠️ 服务名必须叫 backend！Nginx 里转发到 http://backend:3000
   - type: web
-    name: snake-backend
+    name: backend
     runtime: docker
     region: singapore
     plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: ./backend    # 构建上下文 = backend 子目录
     healthCheckPath: /api/health
-    # 数据库数据卷挂载（防止休眠重启后排行榜清空）
-    # 注意：free 套餐的 disk 也是免费的！有 1GB
-    disk:
-      name: snake-db-data
-      mountPath: /app/data
-      sizeGB: 1
+    # --------------------------------------------------------------
+    # 注意：Render 免费套餐不支持 Disk 磁盘挂载
+    # 所以实例休眠/重启后，排行榜可能会清空（实例磁盘是临时的）
+    #
+    # 解决排行榜永久保存的3种方案：
+    #  1️⃣ 花$7/月升级 Render Starter 套餐，再加 Disk（最简单）
+    #  2️⃣ 换 Railway.app（新用户送$5，支持免费Persistent Volume）
+    #  3️⃣ 把 SQLite 换成 Supabase 免费 PostgreSQL（完全免费，永久保存）
+    # --------------------------------------------------------------
